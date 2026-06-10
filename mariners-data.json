@@ -1,0 +1,15 @@
+{
+  "dataHub": {
+    "April": { "wins": 12, "losses": 14, "totalGames": 26 },
+    "May": { "wins": 15, "losses": 13, "totalGames": 28 },
+    "June": { "wins": 5, "losses": 3, "totalGames": 27 },
+    "July": { "wins": 0, "losses": 0, "totalGames": 25 },
+    "August": { "wins": 0, "losses": 0, "totalGames": 27 },
+    "September": { "wins": 0, "losses": 0, "totalGames": 23 }
+  },
+  "userPredictions": [
+    { "id": 1, "name": "Alice", "month": "June", "guess": 14 },
+    { "id": 2, "name": "Bob", "month": "June", "guess": 16 },
+    { "id": 3, "name": "Charlie", "month": "June", "guess": 11 }
+  ]
+}

@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mariners Prediction Hub</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #0c2c56;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background-color: #ffffff;
+            color: #0c2c56;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            max-width: 640px;
+            width: 100%;
+            border: 4px solid #005c5c;
+        }
+        h1, h2, h3 {
+            text-align: center;
+            color: #0c2c56;
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        h1 {
+            border-bottom: 4px solid #005c5c;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 1.25rem;
+            border-bottom: 2px solid #a1a1a1;
+            padding-bottom: 5px;
+            margin-top: 25px;
+        }
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            background-color: #0c2c56;
+            padding: 15px;
+            border-radius: 6px;
+        }
+        .dash-card {
+            background: #ffffff;
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            border: 2px solid #a1a1a1;
+        }
+        .dash-card.full-width {
+            grid-column: span 2;
+            background-color: #005c5c;
+            color: #ffffff;
+            border: 2px solid #ffffff;
+        }
+        .dash-val {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #005c5c;
+            margin-top: 5px;
+        }
+        .dash-card.full-width .dash-val {
+            color: #ffffff;
+            font-size: 1.8rem;
+        }
+        .dash-lbl {
+            font-size: 0.8rem;
+            color: #0c2c56;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .dash-card.full-width .dash-lbl {
+            color: #ffffff;
+        }
+        .winner-box {
+            background-color: #000000;
+            color: #ffffff;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 2px solid #005c5c;
+        }
+        .winner-text {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #30cdcd; 
+            margin: 5px 0;
+        }
+        .form-inline {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .form-group {
+            flex: 1;
+            min-width: 100px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            font-size: 0.85rem;
+        }
+        select, input, button {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #0c2c56;
+            border-radius: 4px;
+            box-sizing: border-box;
+            font-weight: bold;
+        }
+        button {
+            background-color: #005c5c;
+            color: #ffffff;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
+        button:hover {
+            background-color: #0c2c56;
+            color: #ffffff;
+        }
+        .btn-secondary {
+            background-color: #000000;
+        }
+        .btn-danger {
+            background-color: #a62626;
+            padding: 5px 8px;
+            font-size: 0.75rem;
+            border: none;
+            color: white;
+            border-radius: 3px;
+            width: auto;
+        }
+        .btn-danger:hover {
+            background-color: #000000;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            color: #000000;
+        }
+        th, td {
+            border: 2px solid #a1a1a1;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #0c2c56;
+            color: #ffffff;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        tr:nth-child(even) {
+            background-color: #f4f7f6;
+        }
+        .month-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            color: #0c2c56;
+        }
+        .month-label {
+            width: 95px;
+            font-weight: bold;
+        }
+        .bar-container {
+            flex-grow: 1;
+            background-color: #a1a1a1;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-right: 10px;
+            display: flex;
+            height: 20px;
+            border: 1px solid #0c2c56;
+        }
+        .bar-wins {
+            height: 100%;
+            background-color: #005c5c;
+        }
+        .bar-losses {
+            height: 100%;
+            background-color: #000000;
+        }
+        .record-text {
+            width: 70px;
+            text-align: right;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+        .help-text {
+            font-size: 0.8rem;
+            color: #444;
+            margin: -8px 0 12px 0;
+            line-height: 1.4;
+        }
+        .help-text code {
+            background: #eef2f2;
+            padding: 1px 4px;
+            border-radius: 3px;
+        }
+        .data-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+        .data-actions button { flex: 1; min-width: 140px; }
+        .status-msg {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 1em;
+            margin-bottom: 10px;
+        }
+        @media print {
+            body { background-color: white; color: black; padding: 0; }
+            .container { border: none; box-shadow: none; }
+            button, .form-inline, .data-actions, .help-text { display: none !important; }
+            th { background-color: #0c2c56 !important; color: white !important; -webkit-print-color-adjust: exact; }
+            .btn-danger { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Mariners Prediction Hub</h1>
+    
+    <div class="winner-box">
+        <div>🏆 Final Winner for <span id="filterMonthLabelA">June</span>:</div>
+        <div class="winner-text" id="monthWinner">None</div>
+        <div style="margin-top: 10px;">🔮 Currently Tracking to Win (<span id="projectedMonthLabel">June</span>):</div>
+        <div class="winner-text" id="projectedWinner">None</div>
+    </div>
+
+    <h2>Team Dashboard</h2>
+    <div class="dashboard">
+        <div class="dash-card">
+            <div class="dash-lbl">Selected Month Record</div>
+            <div class="dash-val" id="dashMonthRecord">5 - 3</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-lbl">Win Percentage</div>
+            <div class="dash-val" id="dashWinPct">.529</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-lbl">Season Record</div>
+            <div class="dash-val" id="dashSeasonRecord">36 - 32</div>
+        </div>
+        <div class="dash-card">
+            <div class="dash-lbl">Games Remaining</div>
+            <div class="dash-val" id="dashGamesLeft">94</div>
+        </div>
+        <div class="dash-card full-width">
+            <div class="dash-lbl">Calculated <span id="projWinLabel">June</span> Win Projection</div>
+            <div class="dash-val" id="dashProjectedWins">15</div>
+        </div>
+    </div>
+
+    <h2>Select Active Month</h2>
+    <p class="help-text">This selector filters the whole page &mdash; the winner box and prediction table follow it.</p>
+    <div class="form-inline">
+        <div class="form-group" style="flex: 2;">
+            <select id="globalMonthSelect" onchange="handleMonthChange()">
+                <option value="April">April</option>
+                <option value="May">May</option>
+                <option value="June" selected>June</option>
+                <option value="July">July</option>
+                <option value="August">August</option>
+                <option value="September">September</option>
+            </select>
+        </div>
+    </div>
+
+    <h2>Upload Predictions (CSV)</h2>
+    <p class="help-text">
+        Columns: <code>name, month, guess</code> (one row per person per month). Header row optional.
+        Importing updates matching people for that month and adds new ones. Example:<br>
+        <code>name,month,guess</code> &nbsp; <code>Alice,June,14</code> &nbsp; <code>Bob,June,16</code>
+    </p>
+    <div class="form-inline">
+        <div class="form-group" style="flex: 2;">
+            <input type="file" id="csvInput" accept=".csv,text/csv">
+        </div>
+        <div class="form-group">
+            <button onclick="uploadCsv()">Import CSV</button>
+        </div>
+    </div>
+    <div class="status-msg" id="csvStatus"></div>
+
+    <h2>Group Projections</h2>
+    <div class="form-inline">
+        <div class="form-group" style="flex: 2;">
+            <label for="nameInput">Person's Name</label>
+            <input type="text" id="nameInput" placeholder="e.g. John">
+        </div>
+        <div class="form-group">
+            <label for="guessInput">Win Guess</label>
+            <input type="number" id="guessInput" min="0" max="31">
+        </div>
+    </div>
+    <button onclick="savePrediction()" style="margin-bottom: 10px;">Save/Update Person</button>
+    <button onclick="window.print()" class="btn-secondary" style="margin-bottom: 15px;">🖨️ Print Scoreboard Report</button>
+
+    <p class="help-text">Showing predictions for <strong id="filterMonthLabelB">June</strong>.</p>
+    <table>
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Month</th>
+                <th>Projected Wins</th>
+                <th>Proj. Win %</th>
+                <th style="width: 70px;">Action</th>
+            </tr>
+        </thead>
+        <tbody id="predictionTableBody"></tbody>
+    </table>
+
+    <h2>Update Core Team Records</h2>
+    <div class="form-inline">
+        <div class="form-group">
+            <label for="winInput">Wins</label>
+            <input type="number" id="winInput" min="0" max="31">
+        </div>
+        <div class="form-group">
+            <label for="lossInput">Losses</label>
+            <input type="number" id="lossInput" min="0" max="31">
+        </div>
+    </div>
+    <button onclick="updateTeamData()" class="btn-secondary">Apply Team Updates</button>
+
+    <h2>Monthly Win/Loss Tracker</h2>
+    <div class="chart-container" id="chart"></div>
+
+    <h2>Save / Share Data</h2>
+    <p class="help-text">
+        "Export" downloads <code>mariners-data.json</code>. Commit that file to your GitHub repo next to index.html so
+        everyone loads the same saved guesses &mdash; the app auto-loads it on open. Your own browser also keeps a local
+        copy automatically between visits.
+    </p>
+    <div class="data-actions">
+        <button onclick="exportData()">⬇️ Export Data File</button>
+        <button onclick="document.getElementById('jsonInput').click()" class="btn-secondary">⬆️ Import Data File</button>
+        <input type="file" id="jsonInput" accept=".json,application/json" style="display:none" onchange="importDataFile(event)">
+    </div>
+    <div class="status-msg" id="dataStatus"></div>
+</div>
+
+<script>
+    let dataHub = {
+        April: { wins: 12, losses: 14, totalGames: 26 },
+        May: { wins: 15, losses: 13, totalGames: 28 },
+        June: { wins: 5, losses: 3, totalGames: 27 },
+        July: { wins: 0, losses: 0, totalGames: 25 },
+        August: { wins: 0, losses: 0, totalGames: 27 },
+        September: { wins: 0, losses: 0, totalGames: 23 }
+    };
+
+    let userPredictions = [];
+
+    const MLB_SEASON_GAMES = 162;
+    let currentProjectedWins = 15;
+
+    const DEFAULT_PREDICTIONS = [
+        { id: 1, name: "Alice", month: "June", guess: 14 },
+        { id: 2, name: "Bob", month: "June", guess: 16 },
+        { id: 3, name: "Charlie", month: "June", guess: 11 },
+        { id: 4, name: "Alice", month: "May", guess: 19 },
+        { id: 5, name: "Bob", month: "May", guess: 15 }
+    ];
+
+    const VALID_MONTHS = ["April", "May", "June", "July", "August", "September"];
+
+    function getSelectedMonth() {
+        return document.getElementById("globalMonthSelect").value;
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/[&<>"']/g, function(c) {
+            return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+        });
+    }
+
+    // ---------- Persistence ----------
+    function saveToMemory() {
+        localStorage.setItem("mariners_team_datahub", JSON.stringify(dataHub));
+        localStorage.setItem("mariners_user_predictions", JSON.stringify(userPredictions));
+    }
+
+    function applyState(state) {
+        if (state.dataHub) dataHub = state.dataHub;
+        if (state.userPredictions) userPredictions = state.userPredictions;
+    }
+
+    function loadFromLocalStorage() {
+        const t = localStorage.getItem("mariners_team_datahub");
+        const p = localStorage.getItem("mariners_user_predictions");
+        if (t) dataHub = JSON.parse(t);
+        if (p) { userPredictions = JSON.parse(p); } else { userPredictions = DEFAULT_PREDICTIONS.slice(); }
+    }
+
+    // Load a shared data file committed to the repo, if present. It overrides local copy.
+    async function loadSharedFile() {
+        try {
+            const resp = await fetch("mariners-data.json", { cache: "no-store" });
+            if (!resp.ok) return false;
+            const state = await resp.json();
+            applyState(state);
+            saveToMemory();
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // ---------- CSV upload ----------
+    function uploadCsv() {
+        const fileInput = document.getElementById("csvInput");
+        const status = document.getElementById("csvStatus");
+        if (!fileInput.files || fileInput.files.length === 0) {
+            status.style.color = "#a62626";
+            status.innerText = "Choose a CSV file first.";
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const r = parseCsv(e.target.result);
+                status.style.color = "#005c5c";
+                status.innerText = "Imported " + r.added + " new, updated " + r.updated +
+                    (r.skipped ? (", skipped " + r.skipped + " bad row(s)") : "") + ".";
+                fileInput.value = "";
+                saveToMemory();
+                refreshAll();
+            } catch (err) {
+                status.style.color = "#a62626";
+                status.innerText = "Could not read CSV: " + err.message;
+            }
+        };
+        reader.readAsText(fileInput.files[0]);
+    }
+
+    function normalizeMonth(m) {
+        if (!m) return null;
+        const lower = m.toLowerCase();
+        return VALID_MONTHS.find(function(v) { return v.toLowerCase() === lower; }) || null;
+    }
+
+    function parseCsv(text) {
+        const lines = text.split(/\r?\n/).map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+        let added = 0, updated = 0, skipped = 0;
+        lines.forEach(function(line, idx) {
+            const cols = line.split(",").map(function(c) { return c.trim(); });
+            if (idx === 0 && cols[0].toLowerCase() === "name") return; // skip header
+            if (cols.length < 3) { skipped++; return; }
+            const name = cols[0];
+            const month = normalizeMonth(cols[1]);
+            const guess = parseInt(cols[2], 10);
+            if (!name || !month || isNaN(guess) || guess < 0) { skipped++; return; }
+            const existing = userPredictions.find(function(p) {
+                return p.name.toLowerCase() === name.toLowerCase() && p.month === month;
+            });
+            if (existing) { existing.guess = guess; updated++; }
+            else { userPredictions.push({ id: Date.now() + idx, name: name, month: month, guess: guess }); added++; }
+        });
+        return { added: added, updated: updated, skipped: skipped };
+    }
+
+    // ---------- Calculations ----------
+    function calculateHub() {
+        let seasonWins = 0, seasonLosses = 0;
+        for (const m in dataHub) {
+            seasonWins += dataHub[m].wins;
+            seasonLosses += dataHub[m].losses;
+        }
+        const totalPlayed = seasonWins + seasonLosses;
+        const gamesRemaining = Math.max(0, MLB_SEASON_GAMES - totalPlayed);
+        const winPct = totalPlayed > 0 ? (seasonWins / totalPlayed) : 0;
+
+        const month = getSelectedMonth();
+        const mWins = dataHub[month].wins;
+        const mLosses = dataHub[month].losses;
+        const mPlayed = mWins + mLosses;
+        const mRemainingGames = Math.max(0, dataHub[month].totalGames - mPlayed);
+        const projectedExtraWins = Math.round(winPct * mRemainingGames);
+        currentProjectedWins = mWins + projectedExtraWins;
+
+        document.getElementById("dashMonthRecord").innerText = mWins + " - " + mLosses;
+        document.getElementById("dashSeasonRecord").innerText = seasonWins + " - " + seasonLosses;
+        document.getElementById("dashWinPct").innerText = winPct.toFixed(3).substring(1);
+        document.getElementById("dashGamesLeft").innerText = gamesRemaining;
+        document.getElementById("dashProjectedWins").innerText = currentProjectedWins;
+        document.getElementById("projWinLabel").innerText = month;
+        document.getElementById("projectedMonthLabel").innerText = month;
+        document.getElementById("filterMonthLabelA").innerText = month;
+        document.getElementById("filterMonthLabelB").innerText = month;
+        determineWinners();
+    }
+
+    // "Tracking to win" = closest guess to the calculated projection.
+    // "Final winner" = closest guess to the actual wins recorded for that month.
+    function determineWinners() {
+        const month = getSelectedMonth();
+        const monthlyGuesses = userPredictions.filter(function(p) { return p.month === month; });
+        const projEl = document.getElementById("projectedWinner");
+        const finalEl = document.getElementById("monthWinner");
+
+        if (monthlyGuesses.length === 0) {
+            projEl.innerText = "No predictions entered";
+            finalEl.innerText = "No predictions entered";
+            return;
+        }
+
+        function closestTo(target) {
+            let best = null, smallest = Infinity;
+            monthlyGuesses.forEach(function(p) {
+                const diff = Math.abs(p.guess - target);
+                if (diff < smallest) { smallest = diff; best = p; }
+            });
+            return best;
+        }
+
+        const tracking = closestTo(currentProjectedWins);
+        projEl.innerText = tracking.name + " (picked " + tracking.guess + ", proj " + currentProjectedWins + ")";
+
+        const actualWins = dataHub[month].wins;
+        const finalW = closestTo(actualWins);
+        finalEl.innerText = finalW.name + " (picked " + finalW.guess + ", actual " + actualWins + ")";
+    }
+
+    // ---------- Tables ----------
+    function renderTable() {
+        const tbody = document.getElementById("predictionTableBody");
+        const month = getSelectedMonth();
+        const totalGames = dataHub[month].totalGames;
+        tbody.innerHTML = "";
+        userPredictions.filter(function(p) { return p.month === month; }).forEach(function(p) {
+            const pct = totalGames > 0 ? (p.guess / totalGames) : 0;
+            const row = document.createElement("tr");
+            row.innerHTML = "<td>" + escapeHtml(p.name) + "</td><td>" + p.month + "</td><td>" + p.guess +
+                "</td><td>" + pct.toFixed(3).substring(1) +
+                "</td><td><button class='btn-danger' onclick='deletePrediction(" + p.id + ")'>Delete</button></td>";
+            tbody.appendChild(row);
+        });
+    }
+
+    // ---------- Monthly bar chart ----------
+    function renderChart() {
+        const chartElement = document.getElementById("chart");
+        chartElement.innerHTML = "";
+        const maxMonthGames = 35;
+        for (const month in dataHub) {
+            const wins = dataHub[month].wins;
+            const losses = dataHub[month].losses;
+            const row = document.createElement("div");
+            row.className = "month-row";
+            const label = document.createElement("div");
+            label.className = "month-label";
+            label.innerText = month;
+            const barContainer = document.createElement("div");
+            barContainer.className = "bar-container";
+            const winBar = document.createElement("div");
+            winBar.className = "bar-wins";
+            winBar.style.width = ((wins / maxMonthGames) * 100) + "%";
+            const lossBar = document.createElement("div");
+            lossBar.className = "bar-losses";
+            lossBar.style.width = ((losses / maxMonthGames) * 100) + "%";
+            const text = document.createElement("div");
+            text.className = "record-text";
+            text.innerText = wins + "W - " + losses + "L";
+            barContainer.appendChild(winBar);
+            barContainer.appendChild(lossBar);
+            row.appendChild(label);
+            row.appendChild(barContainer);
+            row.appendChild(text);
+            chartElement.appendChild(row);
+        }
+    }
+
+    // ---------- Event handlers ----------
+    function handleMonthChange() {
+        const month = getSelectedMonth();
+        document.getElementById("winInput").value = dataHub[month].wins;
+        document.getElementById("lossInput").value = dataHub[month].losses;
+        refreshAll();
+    }
+
+    function refreshAll() {
+        calculateHub();
+        renderTable();
+        renderChart();
+    }
+
+    function updateTeamData() {
+        const month = getSelectedMonth();
+        const wins = parseInt(document.getElementById("winInput").value, 10);
+        const losses = parseInt(document.getElementById("lossInput").value, 10);
+        if (isNaN(wins) || wins < 0 || isNaN(losses) || losses < 0) {
+            alert("Please enter real positive values.");
+            return;
+        }
+        dataHub[month].wins = wins;
+        dataHub[month].losses = losses;
+        saveToMemory();
+        refreshAll();
+    }
+
+    function savePrediction() {
+        const name = document.getElementById("nameInput").value.trim();
+        const guess = parseInt(document.getElementById("guessInput").value, 10);
+        const month = getSelectedMonth();
+        if (!name || isNaN(guess) || guess < 0) {
+            alert("Please fill out a valid name and win count.");
+            return;
+        }
+        const existing = userPredictions.find(function(p) {
+            return p.name.toLowerCase() === name.toLowerCase() && p.month === month;
+        });
+        if (existing) { existing.guess = guess; }
+        else { userPredictions.push({ id: Date.now(), name: name, month: month, guess: guess }); }
+        document.getElementById("nameInput").value = "";
+        document.getElementById("guessInput").value = "";
+        saveToMemory();
+        refreshAll();
+    }
+
+    function deletePrediction(id) {
+        userPredictions = userPredictions.filter(function(p) { return p.id !== id; });
+        saveToMemory();
+        refreshAll();
+    }
+
+    // ---------- Export / Import shared data ----------
+    function exportData() {
+        const state = { dataHub: dataHub, userPredictions: userPredictions };
+        const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "mariners-data.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        const status = document.getElementById("dataStatus");
+        status.style.color = "#005c5c";
+        status.innerText = "Downloaded mariners-data.json \u2014 commit it next to index.html in your repo.";
+    }
+
+    function importDataFile(event) {
+        const file = event.target.files[0];
+        const status = document.getElementById("dataStatus");
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const state = JSON.parse(e.target.result);
+                applyState(state);
+                saveToMemory();
+                refreshAll();
+                status.style.color = "#005c5c";
+                status.innerText = "Data file loaded.";
+            } catch (err) {
+                status.style.color = "#a62626";
+                status.innerText = "Invalid data file: " + err.message;
+            }
+            event.target.value = "";
+        };
+        reader.readAsText(file);
+    }
+
+    // ---------- Init ----------
+    window.onload = async function() {
+        loadFromLocalStorage();
+        await loadSharedFile(); // overrides local copy if a committed file exists
+        const month = getSelectedMonth();
+        document.getElementById("winInput").value = dataHub[month].wins;
+        document.getElementById("lossInput").value = dataHub[month].losses;
+        refreshAll();
+    };
+</script>
+</body>
+</html>
