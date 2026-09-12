@@ -27,4 +27,5 @@ RUN pnpm --filter @allclear/web build
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["pnpm", "--filter", "@allclear/web", "start", "--", "-p", "3000", "-H", "0.0.0.0"]
+WORKDIR /app/apps/web
+CMD ["./node_modules/.bin/next", "start", "-p", "3000", "-H", "0.0.0.0"]
