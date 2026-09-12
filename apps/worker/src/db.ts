@@ -12,6 +12,9 @@ export interface WatchLocationWithLayers extends WatchLocation {
 let client: TypedSupabaseClient | null = null;
 
 export function db(config: WorkerConfig): TypedSupabaseClient {
+  if (!config.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set — the worker cannot write to the hazard caches without it.');
+  }
   if (!client) client = createAdminClient(config.SUPABASE_URL, config.SUPABASE_SERVICE_ROLE_KEY);
   return client;
 }

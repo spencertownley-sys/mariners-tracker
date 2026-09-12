@@ -4,8 +4,6 @@ One calm dashboard for the places you care about: weather, wildfire & smoke, ear
 
 The product docs that drive this build live in [`docs/`](docs/): [PRD](docs/AllClear-PRD.md) · [Tech Spec](docs/AllClear-TECH_SPEC.md) · [API Design](docs/AllClear-API_DESIGN.md) · [UI/UX Notes](docs/AllClear-UI_UX_NOTES.md) · [Launch Checklist](docs/AllClear-LAUNCH_CHECKLIST.md). The build prompt is [`CLAUDE.md`](CLAUDE.md).
 
-> This repository also still contains the original Mariners win tracker (`index.html`, `mariners-data.json`, `Mariners guesses.csv`). It is untouched by AllClear.
-
 ## Layout
 
 ```
@@ -56,8 +54,8 @@ The browser never calls a government API. The worker polls each source on its ow
 
 ## Deploying
 
-- **Web → Vercel.** Root directory `apps/web`, framework Next.js, install command `pnpm install --frozen-lockfile` from the repo root (enable "Include files outside root directory"). Set the env vars above.
-- **Worker → Railway.** Use `apps/worker/Dockerfile` (root `railway.json` points at it). Health check path `/health`. Set the same Supabase vars plus the API keys.
+- **Web → Vercel** (Tech Spec default): root directory `apps/web`, framework Next.js, install command `pnpm install --frozen-lockfile` from the repo root (enable "Include files outside root directory"). Set the env vars above. The web app also runs on Railway via `apps/web/Dockerfile` (config: `apps/web/railway.json`), which is how the first draft is hosted.
+- **Worker → Railway.** `apps/worker/Dockerfile` with config `apps/worker/railway.json`. Liveness `/healthz`, readiness `/health` (503 until every enabled poller has succeeded recently, or until `SUPABASE_SERVICE_ROLE_KEY` is set). Set the same Supabase vars plus the API keys.
 - **Database → Supabase.** CI applies `supabase/migrations` with the Supabase CLI before deploying. Migrations are additive so a code rollback never needs a DB rollback (Tech Spec §9).
 
 See [`docs/AllClear-LAUNCH_CHECKLIST.md`](docs/AllClear-LAUNCH_CHECKLIST.md) before announcing anything.
