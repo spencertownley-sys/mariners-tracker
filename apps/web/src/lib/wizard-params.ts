@@ -10,5 +10,6 @@ export function parseWizardParams(params: Record<string, string | string[] | und
     label: one('label')?.slice(0, 60),
     city_name: one('city') || undefined,
     state: one('state') || undefined,
+    postal_code: one('zip')?.trim().slice(0, 12) || undefined,
   };
 }

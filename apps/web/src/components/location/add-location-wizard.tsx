@@ -15,7 +15,7 @@ import { LayerEditor, defaultLayers } from './layer-editor';
 
 interface WizardProps {
   firstTime: boolean;
-  initial?: { latitude: number; longitude: number; label?: string; city_name?: string; state?: string } | null;
+  initial?: { latitude: number; longitude: number; label?: string; city_name?: string; state?: string; postal_code?: string } | null;
 }
 
 /**
@@ -33,6 +33,7 @@ export function AddLocationWizard({ firstTime, initial }: WizardProps) {
           longitude: initial.longitude,
           city_name: initial.city_name ?? null,
           state: initial.state ?? null,
+          postal_code: initial.postal_code ?? null,
           country: 'US',
         }
       : null,
@@ -82,6 +83,7 @@ export function AddLocationWizard({ firstTime, initial }: WizardProps) {
           longitude: selected.longitude,
           city_name: selected.city_name,
           state: selected.state,
+          postal_code: selected.postal_code ?? null,
           country: selected.country,
         },
       });

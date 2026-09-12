@@ -7,7 +7,7 @@ import { ApiError, type WatchLocation, type LayerConfigDTO } from '@allclear/sha
 import { createClient, type ServerSupabaseClient } from '@/lib/supabase/server';
 import { getOwnedLocation, toLocationDTO } from '@/lib/data/locations';
 import { getLayers } from '@/lib/data/layers';
-import { layerContext, loadAirQuality, loadAlerts, loadEarthquakes, loadWeather, loadWildfire } from '@/lib/data/hazards';
+import { layerContext, loadAirQuality, loadAlerts, loadEarthquakes, loadStorms, loadWeather, loadWildfire } from '@/lib/data/hazards';
 import { placeLine } from '@/lib/format';
 import { PageHeader } from '@/components/ui/page-header';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +19,7 @@ import { EarthquakeSection } from '@/components/hazards/earthquake-section';
 import { AirQualitySection } from '@/components/hazards/air-quality-section';
 import { AlertsSection } from '@/components/hazards/alerts-section';
 import { ActiveAlertBanner } from '@/components/hazards/active-alert-banner';
+import { StormsNotice } from '@/components/hazards/storms-notice';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -41,6 +42,9 @@ type Ctx = ReturnType<typeof layerContext>;
 
 async function Weather({ supabase, ctx }: { supabase: ServerSupabaseClient; ctx: Ctx }) {
   return <WeatherSection weather={await loadWeather(supabase, ctx)} />;
+}
+async function Storms({ supabase, ctx }: { supabase: ServerSupabaseClient; ctx: Ctx }) {
+  return <StormsNotice storms={await loadStorms(supabase, ctx)} />;
 }
 async function Wildfire({ supabase, ctx, location }: { supabase: ServerSupabaseClient; ctx: Ctx; location: WatchLocation }) {
   const wildfire = await loadWildfire(supabase, ctx);
@@ -95,11 +99,18 @@ export default async function LocationDetailPage({ params }: Params) {
           <AlertBanner supabase={supabase} ctx={ctx} />
         </Suspense>
         {ctx.cfg.weather.enabled ? (
-          <SectionErrorBoundary label="weather">
-            <Suspense fallback={<SectionSkeleton />}>
-              <Weather supabase={supabase} ctx={ctx} />
-            </Suspense>
-          </SectionErrorBoundary>
+          <>
+            <SectionErrorBoundary label="tropical storm data">
+              <Suspense fallback={null}>
+                <Storms supabase={supabase} ctx={ctx} />
+              </Suspense>
+            </SectionErrorBoundary>
+            <SectionErrorBoundary label="weather">
+              <Suspense fallback={<SectionSkeleton />}>
+                <Weather supabase={supabase} ctx={ctx} />
+              </Suspense>
+            </SectionErrorBoundary>
+          </>
         ) : null}
         {ctx.cfg.wildfire.enabled ? (
           <SectionErrorBoundary label="wildfire data">

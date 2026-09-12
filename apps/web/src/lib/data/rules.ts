@@ -18,6 +18,7 @@ export function toRuleDTO(row: NotificationRule): NotificationRuleDTO {
     threshold_value: row.threshold_value === null ? null : Number(row.threshold_value),
     channel: row.channel,
     enabled: row.enabled,
+    min_interval_minutes: row.min_interval_minutes,
   };
 }
 
@@ -45,6 +46,7 @@ export async function createRule(
       threshold_value: input.condition_type === 'any_active' ? null : (input.threshold_value ?? null),
       channel: input.channel,
       enabled: input.enabled,
+      min_interval_minutes: input.min_interval_minutes ?? null,
     })
     .select('*')
     .single();
@@ -85,6 +87,7 @@ export async function updateRule(
   if (input.threshold_value !== undefined) patch.threshold_value = input.threshold_value;
   if (input.channel !== undefined) patch.channel = input.channel;
   if (input.enabled !== undefined) patch.enabled = input.enabled;
+  if (input.min_interval_minutes !== undefined) patch.min_interval_minutes = input.min_interval_minutes;
   const { data, error } = await supabase.from('notification_rules').update(patch).eq('id', ruleId).select('*').single();
   if (error || !data) throw new ApiError('INTERNAL_ERROR', 'Could not update that rule');
   return toRuleDTO(data);

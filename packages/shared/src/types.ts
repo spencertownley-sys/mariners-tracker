@@ -18,6 +18,7 @@ export interface WatchLocation {
   longitude: number;
   city_name: string | null;
   state: string | null;
+  postal_code: string | null;
   country: string;
   is_primary: boolean;
   created_at: string;
@@ -43,6 +44,8 @@ export interface NotificationRule {
   threshold_value: number | null;
   channel: Channel;
   enabled: boolean;
+  /** Minimum minutes between notifications for this rule; null = every new event. */
+  min_interval_minutes: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -76,6 +79,9 @@ export interface WeatherCurrent {
   conditions: string;
   humidity_pct: number | null;
   wind_mph: number | null;
+  /** Compass direction the wind blows from, e.g. "SW". */
+  wind_dir: string | null;
+  wind_gust_mph: number | null;
   icon: string | null;
   observed_at: string | null;
   station: string | null;
@@ -89,6 +95,8 @@ export interface WeatherHourly {
   conditions: string;
   precip_pct: number | null;
   icon: string | null;
+  wind_mph: number | null;
+  wind_dir: string | null;
 }
 
 export interface WeatherDaily {
@@ -162,6 +170,7 @@ export interface LocationDTO {
   longitude: number;
   city_name: string | null;
   state: string | null;
+  postal_code: string | null;
   country: string;
   is_primary: boolean;
   created_at: string;
@@ -175,6 +184,16 @@ export interface LayerConfigDTO {
   min_magnitude?: number | null;
 }
 
+export interface UvDTO {
+  uv_index: number;
+  category: string;
+  alert: boolean;
+  date: string | null;
+  source: HazardSource;
+  fetched_at: string;
+  stale: boolean;
+}
+
 export interface WeatherDTO {
   current: (WeatherCurrent & { source: HazardSource; fetched_at: string }) | null;
   hourly: WeatherHourly[];
@@ -182,6 +201,7 @@ export interface WeatherDTO {
   source: HazardSource;
   fetched_at: string | null;
   stale: boolean;
+  uv: UvDTO | null;
 }
 
 export interface HotspotDTO {
@@ -208,6 +228,48 @@ export interface IncidentDTO {
   url: string | null;
   source: HazardSource;
 }
+
+/** An active fire perimeter polygon (NIFC WFIGS). */
+export interface PerimeterDTO {
+  id: string;
+  name: string;
+  acres: number | null;
+  containment_pct: number | null;
+  /** Miles from the location to the nearest edge of the perimeter (0 when inside). */
+  distance_miles: number;
+  updated_at: string | null;
+  geojson: GeoJsonGeometry;
+  source: HazardSource;
+}
+
+/** A past fire perimeter within the location's radius (NIFC history, last 10 years). */
+export interface HistoricalFireDTO {
+  id: string;
+  name: string;
+  year: number | null;
+  acres: number | null;
+  distance_miles: number;
+  geojson: GeoJsonGeometry;
+  source: HazardSource;
+}
+
+export interface StormDTO {
+  id: string;
+  name: string;
+  classification: string;
+  intensity_kt: number | null;
+  pressure_mb: number | null;
+  latitude: number;
+  longitude: number;
+  movement_dir: number | null;
+  movement_mph: number | null;
+  distance_miles: number | null;
+  last_update: string | null;
+  url: string | null;
+  source: HazardSource;
+}
+
+export type GeoJsonGeometry = { type: string; coordinates: unknown };
 
 export interface EarthquakeDTO {
   id: string;
@@ -252,9 +314,13 @@ export interface LocationHazardsResponse {
   wildfire?: {
     hotspots: HotspotDTO[];
     incidents: IncidentDTO[];
+    perimeters: PerimeterDTO[];
+    history: HistoricalFireDTO[];
+    cameras_url: string;
     radius_miles: number;
     stale: boolean;
   };
+  storms?: StormDTO[];
   earthquakes?: {
     events: EarthquakeDTO[];
     radius_miles: number;
@@ -286,14 +352,28 @@ export interface MapQuakeDTO {
   source: HazardSource;
 }
 
+export interface MapPerimeterDTO {
+  id: string;
+  name: string;
+  acres: number | null;
+  containment_pct: number | null;
+  updated_at: string | null;
+  geojson: GeoJsonGeometry;
+  source: HazardSource;
+}
+
 export interface MapResponse {
   data: {
     fires: MapFireDTO[];
     quakes: MapQuakeDTO[];
+    perimeters: MapPerimeterDTO[];
+    storms: StormDTO[];
   };
   meta: {
     fires_updated_at: string | null;
     quakes_updated_at: string | null;
+    perimeters_updated_at: string | null;
+    storms_updated_at: string | null;
   };
 }
 
@@ -304,6 +384,7 @@ export interface NotificationRuleDTO {
   threshold_value: number | null;
   channel: Channel;
   enabled: boolean;
+  min_interval_minutes: number | null;
 }
 
 export interface NotificationHistoryItemDTO {
@@ -335,5 +416,6 @@ export interface GeocodeResult {
   longitude: number;
   city_name: string | null;
   state: string | null;
+  postal_code: string | null;
   country: string;
 }

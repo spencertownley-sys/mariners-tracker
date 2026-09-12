@@ -23,6 +23,12 @@ const schema = z.object({
   POLL_NWS_WEATHER_MINUTES: minutes(15),
   POLL_AIRNOW_MINUTES: minutes(30),
   POLL_NIFC_MINUTES: minutes(20),
+  POLL_NIFC_PERIMETERS_MINUTES: minutes(20),
+  POLL_NIFC_HISTORY_MINUTES: minutes(1440),
+  POLL_NHC_MINUTES: minutes(30),
+  POLL_EPA_UV_MINUTES: minutes(360),
+  NIFC_PERIMETERS_URL: z.string().optional(),
+  NIFC_HISTORY_URL: z.string().optional(),
   /** Bounding box polled from FIRMS: US incl. Alaska, Hawaii and Puerto Rico. */
   FIRMS_BBOX: z.string().default('-170,15,-60,72'),
   /** Safety cap on per-cell external calls in one run (AirNow free tier is ~500 req/hour). */

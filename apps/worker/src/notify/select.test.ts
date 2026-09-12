@@ -6,7 +6,7 @@ const now = new Date('2026-09-12T02:00:00Z');
 const hoursAgo = (h: number) => new Date(now.getTime() - h * 3_600_000).toISOString();
 
 function rule(partial: Partial<NotificationRule>): NotificationRule {
-  return { id: 'r', watch_location_id: 'l', layer_type: 'wildfire', condition_type: 'distance_threshold_miles', threshold_value: 25, channel: 'both', enabled: true, created_at: '', updated_at: '', ...partial };
+  return { id: 'r', watch_location_id: 'l', layer_type: 'wildfire', condition_type: 'distance_threshold_miles', threshold_value: 25, channel: 'both', enabled: true, min_interval_minutes: null, created_at: '', updated_at: '', ...partial };
 }
 function ev(partial: Partial<NearbyHazardEvent>): NearbyHazardEvent {
   return { id: Math.random().toString(36).slice(2), source: 'firms', external_id: 'x', event_type: 'fire_hotspot', title: 'Hotspot', description: null, severity: null, latitude: 0, longitude: 0, magnitude: null, aqi: null, occurred_at: hoursAgo(1), attributes: {}, fetched_at: '', expires_at: null, distance_miles: 10, ...partial };

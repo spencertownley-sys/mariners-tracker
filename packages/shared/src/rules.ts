@@ -34,7 +34,9 @@ export function eventMatchesRule(
   switch (rule.condition_type) {
     case 'distance_threshold_miles': {
       if (rule.layer_type !== 'wildfire') return false;
-      if (event.event_type !== 'fire_hotspot' && event.event_type !== 'fire_incident') return false;
+      if (event.event_type !== 'fire_hotspot' && event.event_type !== 'fire_incident' && event.event_type !== 'fire_perimeter') {
+        return false;
+      }
       if (ctx.distanceMiles === null || rule.threshold_value === null) return false;
       return ctx.distanceMiles <= rule.threshold_value;
     }
@@ -88,6 +90,16 @@ export function buildNotificationSummary(
       const pct = event.attributes['containment_pct'];
       const contained = typeof pct === 'number' ? ` (${Math.round(pct)}% contained)` : '';
       return `${event.title}${contained} is ${dist} from ${locationLabel}`;
+    }
+    case 'fire_perimeter': {
+      const acres = event.attributes['acres'];
+      const pct = event.attributes['containment_pct'];
+      const parts = [
+        typeof acres === 'number' ? `${Math.round(acres).toLocaleString('en-US')} acres` : null,
+        typeof pct === 'number' ? `${Math.round(pct)}% contained` : null,
+      ].filter(Boolean);
+      const detail = parts.length ? ` (${parts.join(', ')})` : '';
+      return `${event.title} perimeter${detail} is ${dist} from ${locationLabel}`;
     }
     case 'earthquake': {
       const mag = event.magnitude !== null ? `M${event.magnitude.toFixed(1)}` : 'An';

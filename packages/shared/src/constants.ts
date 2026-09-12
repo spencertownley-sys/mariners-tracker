@@ -24,15 +24,19 @@ export type Channel = (typeof CHANNELS)[number];
 export const DELIVERY_CHANNELS = ['web_push', 'email'] as const;
 export type DeliveryChannel = (typeof DELIVERY_CHANNELS)[number];
 
-export const HAZARD_SOURCES = ['nws', 'firms', 'inciweb', 'usgs', 'airnow'] as const;
+export const HAZARD_SOURCES = ['nws', 'firms', 'inciweb', 'usgs', 'airnow', 'epa', 'nhc'] as const;
 export type HazardSource = (typeof HAZARD_SOURCES)[number];
 
 export const EVENT_TYPES = [
   'severe_alert',
   'fire_hotspot',
   'fire_incident',
+  'fire_perimeter',
+  'fire_perimeter_historical',
   'earthquake',
   'aqi_reading',
+  'uv_index',
+  'tropical_cyclone',
 ] as const;
 export type EventType = (typeof EVENT_TYPES)[number];
 
@@ -43,6 +47,8 @@ export const SOURCE_LABELS: Record<HazardSource, string> = {
   inciweb: 'NIFC / InciWeb',
   usgs: 'USGS',
   airnow: 'AirNow',
+  epa: 'EPA',
+  nhc: 'NOAA NHC',
 };
 
 export const LAYER_LABELS: Record<NotificationLayerType, string> = {
@@ -100,6 +106,8 @@ export const SOURCE_STALE_AFTER_MS: Record<HazardSource, number> = {
   inciweb: 2 * 60 * 60 * 1000,
   usgs: 15 * 60 * 1000,
   airnow: 2 * 60 * 60 * 1000,
+  epa: 26 * 60 * 60 * 1000,
+  nhc: 2 * 60 * 60 * 1000,
 };
 
 /** NWS CAP severity ordering, most severe first. */
@@ -111,6 +119,29 @@ export const CELL_SIZE_DEG = {
   weather: 0.05, // ~3.5 mi — NWS gridpoints are 2.5 km
   alerts: 0.1, // ~7 mi
   aqi: 0.1, // AirNow "current by lat/long" already searches within 25 mi
+  history: 0.5, // ~35 mi — 10-year fire perimeter history is fetched per coarse cell
 } as const;
+
+/** How often a rule may notify again. `null` = every new event (subject to per-event de-duplication). */
+export const RULE_FREQUENCY_OPTIONS = [
+  { label: 'Every update', minutes: null },
+  { label: 'Every 6 hours', minutes: 360 },
+  { label: 'Once a day', minutes: 1440 },
+] as const;
+
+/** Default minimum interval between notifications when the rule doesn't set one. */
+export const DEFAULT_MIN_INTERVAL_MINUTES: Record<ConditionType, number | null> = {
+  distance_threshold_miles: 360, // hotspot roll-ups; named incidents still notify once each
+  magnitude_threshold: null,
+  aqi_threshold: 360,
+  any_active: null,
+};
+
+/** Radius used to surface tropical cyclones on a location's page. */
+export const STORM_RADIUS_MILES = 500;
+/** How far back the fire-history layer looks. */
+export const FIRE_HISTORY_YEARS = 10;
+
+export const CAMERA_NETWORK_URL = 'https://www.alertwildfire.org/';
 
 export const MILES_PER_METER = 1 / 1609.344;

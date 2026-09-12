@@ -1,17 +1,26 @@
 import 'server-only';
 import {
   ApiError,
+  CAMERA_NETWORK_URL,
   DEFAULT_MIN_MAGNITUDE,
   DEFAULT_RADIUS_MILES,
+  STORM_RADIUS_MILES,
   aqiCategory,
   isStale,
+  uvCategory,
   type AirQualityDTO,
   type EarthquakeDTO,
+  type GeoJsonGeometry,
+  type HazardSource,
+  type HistoricalFireDTO,
   type HotspotDTO,
   type IncidentDTO,
   type LayerConfigDTO,
   type LocationHazardsResponse,
   type OfficialAlertDTO,
+  type PerimeterDTO,
+  type StormDTO,
+  type UvDTO,
   type WatchLocation,
   type WeatherDTO,
 } from '@allclear/shared';
@@ -20,7 +29,7 @@ import { layerMap } from './layers';
 
 type HazardRow = {
   id: string;
-  source: 'nws' | 'firms' | 'inciweb' | 'usgs' | 'airnow';
+  source: HazardSource;
   external_id: string;
   event_type: string;
   title: string;
@@ -45,6 +54,85 @@ function str(value: unknown): string | null {
 }
 function num(value: unknown): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+type PolygonRow = {
+  id: string;
+  source: 'nws' | 'firms' | 'inciweb' | 'usgs' | 'airnow' | 'epa' | 'nhc';
+  external_id: string;
+  event_type: string;
+  title: string;
+  severity: string | null;
+  occurred_at: string | null;
+  attributes: unknown;
+  fetched_at: string;
+  expires_at: string | null;
+  distance_miles: number;
+  geojson: unknown;
+};
+
+function pattrs(row: PolygonRow): Record<string, unknown> {
+  return row.attributes && typeof row.attributes === 'object' ? (row.attributes as Record<string, unknown>) : {};
+}
+
+function toPerimeterDTO(row: PolygonRow): PerimeterDTO {
+  const a = pattrs(row);
+  return {
+    id: row.id,
+    name: row.title,
+    acres: num(a.acres),
+    containment_pct: num(a.containment_pct),
+    distance_miles: row.distance_miles,
+    updated_at: str(a.updated_at) ?? row.fetched_at,
+    geojson: row.geojson as GeoJsonGeometry,
+    source: row.source,
+  };
+}
+
+function toHistoricalFireDTO(row: PolygonRow): HistoricalFireDTO {
+  const a = pattrs(row);
+  return {
+    id: row.id,
+    name: row.title,
+    year: num(a.year),
+    acres: num(a.acres),
+    distance_miles: row.distance_miles,
+    geojson: row.geojson as GeoJsonGeometry,
+    source: row.source,
+  };
+}
+
+function toStormDTO(row: HazardRow): StormDTO {
+  const a = attrs(row);
+  return {
+    id: row.id,
+    name: str(a.name) ?? row.title,
+    classification: str(a.classification) ?? row.severity ?? 'TC',
+    intensity_kt: num(a.intensity_kt),
+    pressure_mb: num(a.pressure_mb),
+    latitude: Number(row.latitude),
+    longitude: Number(row.longitude),
+    movement_dir: num(a.movement_dir),
+    movement_mph: num(a.movement_mph),
+    distance_miles: row.distance_miles,
+    last_update: row.occurred_at,
+    url: str(a.url),
+    source: row.source,
+  };
+}
+
+function toUvDTO(row: HazardRow): UvDTO {
+  const a = attrs(row);
+  const index = num(a.uv_index) ?? 0;
+  return {
+    uv_index: index,
+    category: uvCategory(index).name,
+    alert: a.alert === true,
+    date: str(a.date),
+    source: row.source,
+    fetched_at: row.fetched_at,
+    stale: isStale(row.source, row.fetched_at),
+  };
 }
 
 async function rpcRows<T>(promise: PromiseLike<{ data: T[] | null; error: { message: string } | null }>, what: string): Promise<T[]> {
@@ -160,13 +248,20 @@ function newestFetchedAt(rows: HazardRow[]): string | null {
 }
 
 export async function loadWeather(supabase: ServerSupabaseClient, ctx: LayerContext): Promise<WeatherDTO> {
-  const { data, error } = await supabase.rpc('nearest_weather', { p_lat: ctx.lat, p_lng: ctx.lng, p_max_miles: 10 });
+  const [{ data, error }, uvRows] = await Promise.all([
+    supabase.rpc('nearest_weather', { p_lat: ctx.lat, p_lng: ctx.lng, p_max_miles: 10 }),
+    rpcRows<HazardRow>(
+      supabase.rpc('hazards_near', { p_lat: ctx.lat, p_lng: ctx.lng, p_radius_miles: 30, p_event_types: ['uv_index'], p_limit: 1 }),
+      'UV index',
+    ),
+  ]);
   if (error) {
     console.error('[hazards] weather failed', error.message);
     throw new ApiError('INTERNAL_ERROR', 'Could not load weather');
   }
+  const uv = uvRows[0] ? toUvDTO(uvRows[0]) : null;
   const row = Array.isArray(data) ? data[0] : undefined;
-  if (!row) return { current: null, hourly: [], daily: [], source: 'nws', fetched_at: null, stale: true };
+  if (!row) return { current: null, hourly: [], daily: [], source: 'nws', fetched_at: null, stale: true, uv };
   return {
     current: row.current ? { ...row.current, source: row.source, fetched_at: row.fetched_at } : null,
     hourly: Array.isArray(row.hourly) ? row.hourly : [],
@@ -174,26 +269,48 @@ export async function loadWeather(supabase: ServerSupabaseClient, ctx: LayerCont
     source: row.source,
     fetched_at: row.fetched_at,
     stale: isStale(row.source, row.fetched_at),
+    uv,
   };
+}
+
+export async function loadStorms(supabase: ServerSupabaseClient, ctx: LayerContext): Promise<StormDTO[]> {
+  const rows = await rpcRows<HazardRow>(
+    supabase.rpc('hazards_near', { p_lat: ctx.lat, p_lng: ctx.lng, p_radius_miles: STORM_RADIUS_MILES, p_event_types: ['tropical_cyclone'], p_limit: 10 }),
+    'tropical cyclones',
+  );
+  return rows.map(toStormDTO);
 }
 
 export async function loadWildfire(
   supabase: ServerSupabaseClient,
   ctx: LayerContext,
 ): Promise<NonNullable<LocationHazardsResponse['wildfire']>> {
-  const fires = await rpcRows<HazardRow>(
-    supabase.rpc('hazards_near', {
-      p_lat: ctx.lat,
-      p_lng: ctx.lng,
-      p_radius_miles: ctx.wildfireRadius,
-      p_event_types: ['fire_hotspot', 'fire_incident'],
-      p_limit: 300,
-    }),
-    'wildfire data',
-  );
+  const [fires, perimeters, history] = await Promise.all([
+    rpcRows<HazardRow>(
+      supabase.rpc('hazards_near', {
+        p_lat: ctx.lat,
+        p_lng: ctx.lng,
+        p_radius_miles: ctx.wildfireRadius,
+        p_event_types: ['fire_hotspot', 'fire_incident'],
+        p_limit: 300,
+      }),
+      'wildfire data',
+    ),
+    rpcRows<PolygonRow>(
+      supabase.rpc('perimeters_near', { p_lat: ctx.lat, p_lng: ctx.lng, p_radius_miles: ctx.wildfireRadius, p_event_types: ['fire_perimeter'], p_limit: 25 }),
+      'fire perimeters',
+    ),
+    rpcRows<PolygonRow>(
+      supabase.rpc('perimeters_near', { p_lat: ctx.lat, p_lng: ctx.lng, p_radius_miles: ctx.wildfireRadius, p_event_types: ['fire_perimeter_historical'], p_limit: 20 }),
+      'fire history',
+    ),
+  ]);
   return {
     hotspots: fires.filter((r) => r.event_type === 'fire_hotspot').map(toHotspotDTO),
     incidents: fires.filter((r) => r.event_type === 'fire_incident').map(toIncidentDTO),
+    perimeters: perimeters.map(toPerimeterDTO),
+    history: history.map(toHistoricalFireDTO).sort((a, b) => (b.year ?? 0) - (a.year ?? 0) || (b.acres ?? 0) - (a.acres ?? 0)),
+    cameras_url: CAMERA_NETWORK_URL,
     radius_miles: ctx.wildfireRadius,
     stale: fires.length > 0 ? isStale('firms', newestFetchedAt(fires)) : false,
   };
@@ -256,14 +373,16 @@ export async function getLocationHazards(
 ): Promise<LocationHazardsResponse> {
   const ctx = layerContext(location, layers);
   const { cfg } = ctx;
-  const [weather, wildfire, earthquakes, air_quality, official_alerts] = await Promise.all([
+  const [weather, wildfire, earthquakes, air_quality, official_alerts, storms] = await Promise.all([
     cfg.weather.enabled ? loadWeather(supabase, ctx) : Promise.resolve(undefined),
     cfg.wildfire.enabled ? loadWildfire(supabase, ctx) : Promise.resolve(undefined),
     cfg.earthquake.enabled ? loadEarthquakes(supabase, ctx) : Promise.resolve(undefined),
     cfg.air_quality.enabled ? loadAirQuality(supabase, ctx) : Promise.resolve(undefined),
     loadAlerts(supabase, ctx),
+    cfg.weather.enabled ? loadStorms(supabase, ctx) : Promise.resolve(undefined),
   ]);
   const response: LocationHazardsResponse = { official_alerts };
+  if (storms !== undefined) response.storms = storms;
   if (weather !== undefined) response.weather = weather;
   if (wildfire !== undefined) response.wildfire = wildfire;
   if (earthquakes !== undefined) response.earthquakes = earthquakes;

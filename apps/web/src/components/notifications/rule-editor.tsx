@@ -4,10 +4,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import {
   AQI_LIMITS,
+  DEFAULT_MIN_INTERVAL_MINUTES,
   DEFAULT_THRESHOLDS,
   LAYER_LABELS,
   MAGNITUDE_LIMITS,
   NOTIFICATION_LAYER_TYPES,
+  RULE_FREQUENCY_OPTIONS,
   VALID_RULE_COMBOS,
   type Channel,
   type ConditionType,
@@ -47,6 +49,29 @@ function thresholdLabel(condition: ConditionType, value: number | null): string 
     default:
       return '';
   }
+}
+
+/**
+ * "Every update" is stored as the minimum allowed interval (15 min) for layers whose default is a
+ * roll-up (wildfire, AQI) and as null for layers that already notify per event; null otherwise
+ * means "use the default", which the selector shows as the effective choice.
+ */
+const EVERY_UPDATE_MINUTES = 15;
+
+function effectiveInterval(rule: NotificationRuleDTO, condition: ConditionType): number | null {
+  const v = rule.min_interval_minutes ?? DEFAULT_MIN_INTERVAL_MINUTES[condition];
+  return v !== null && v <= EVERY_UPDATE_MINUTES ? null : v;
+}
+
+function intervalLabel(minutes: number): string {
+  if (minutes % 1440 === 0) return minutes === 1440 ? 'day' : `${minutes / 1440} days`;
+  if (minutes % 60 === 0) return minutes === 60 ? 'hour' : `${minutes / 60} hours`;
+  return `${minutes} minutes`;
+}
+
+function intervalPatchValue(minutes: number | null, condition: ConditionType): number | null {
+  if (minutes !== null) return minutes;
+  return DEFAULT_MIN_INTERVAL_MINUTES[condition] === null ? null : EVERY_UPDATE_MINUTES;
 }
 
 function sliderProps(condition: ConditionType): { min: number; max: number; step: number } {
@@ -124,7 +149,7 @@ export function RuleEditor({ locationId, locationLabel, initialRules, onRulesCha
     }
   }
 
-  function scheduleSave(rule: NotificationRuleDTO, patch: { threshold_value?: number; channel?: Channel }) {
+  function scheduleSave(rule: NotificationRuleDTO, patch: { threshold_value?: number; channel?: Channel; min_interval_minutes?: number | null }) {
     // Optimistic local update, debounced save, toast on success/failure — never silent.
     setRules((r) => (r ?? []).map((x) => (x.id === rule.id ? { ...x, ...patch } : x)));
     const key = rule.id;
@@ -203,6 +228,38 @@ export function RuleEditor({ locationId, locationLabel, initialRules, onRulesCha
                     />
                   </div>
                 ) : null}
+                <div className="flex flex-wrap items-center gap-2 text-sm">
+                  <span className="text-slate-700">How often</span>
+                  <div className="inline-flex rounded-control border border-slate-300 p-0.5" role="radiogroup" aria-label="Notification frequency">
+                    {RULE_FREQUENCY_OPTIONS.map((opt) => {
+                      const selected = effectiveInterval(rule, condition) === opt.minutes;
+                      return (
+                        <button
+                          key={opt.label}
+                          type="button"
+                          role="radio"
+                          aria-checked={selected}
+                          onClick={() => scheduleSave(rule, { min_interval_minutes: intervalPatchValue(opt.minutes, condition) })}
+                          className={
+                            selected
+                              ? 'min-h-9 rounded-[6px] bg-primary px-3 text-sm font-medium text-white'
+                              : 'min-h-9 rounded-[6px] px-3 text-sm font-medium text-slate-600 hover:bg-slate-100'
+                          }
+                        >
+                          {opt.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <span className="basis-full text-xs text-slate-500">
+                    {(() => {
+                      const every = effectiveInterval(rule, condition);
+                      return every === null
+                        ? 'You get a message as soon as something new matches this rule.'
+                        : `At most one message per ${intervalLabel(every)} for this rule; anything new is rolled into it.`;
+                    })()}
+                  </span>
+                </div>
                 <div className="flex flex-wrap items-center gap-2 text-sm">
                   <span className="text-slate-700">Send via</span>
                   <div className="inline-flex rounded-control border border-slate-300 p-0.5" role="radiogroup" aria-label="Notification channel">

@@ -19,6 +19,7 @@ export type Database = {
           longitude: number;
           city_name: string | null;
           state: string | null;
+          postal_code: string | null;
           country: string;
           is_primary: boolean;
           created_at: string;
@@ -32,6 +33,7 @@ export type Database = {
           longitude: number;
           city_name?: string | null;
           state?: string | null;
+          postal_code?: string | null;
           country?: string;
           is_primary?: boolean;
           created_at?: string;
@@ -45,6 +47,7 @@ export type Database = {
           longitude?: number;
           city_name?: string | null;
           state?: string | null;
+          postal_code?: string | null;
           country?: string;
           is_primary?: boolean;
           created_at?: string;
@@ -102,6 +105,7 @@ export type Database = {
           threshold_value: number | null;
           channel: Database['public']['Enums']['notification_channel'];
           enabled: boolean;
+          min_interval_minutes: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -113,6 +117,7 @@ export type Database = {
           threshold_value?: number | null;
           channel?: Database['public']['Enums']['notification_channel'];
           enabled?: boolean;
+          min_interval_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -124,6 +129,7 @@ export type Database = {
           threshold_value?: number | null;
           channel?: Database['public']['Enums']['notification_channel'];
           enabled?: boolean;
+          min_interval_minutes?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -481,6 +487,48 @@ export type Database = {
           weather_fetched_at: string | null;
         }>;
       };
+      perimeters_near: {
+        Args: {
+          p_lat: number;
+          p_lng: number;
+          p_radius_miles: number;
+          p_event_types: string[];
+          p_limit?: number;
+        };
+        Returns: Array<{
+          id: string;
+          source: Database['public']['Enums']['hazard_source'];
+          external_id: string;
+          event_type: string;
+          title: string;
+          severity: string | null;
+          occurred_at: string | null;
+          attributes: Json;
+          fetched_at: string;
+          expires_at: string | null;
+          distance_miles: number;
+          geojson: Json;
+        }>;
+      };
+      hazard_polygons_in_bbox: {
+        Args: {
+          p_min_lng: number;
+          p_min_lat: number;
+          p_max_lng: number;
+          p_max_lat: number;
+          p_event_types: string[];
+          p_limit?: number;
+        };
+        Returns: Array<{
+          id: string;
+          source: Database['public']['Enums']['hazard_source'];
+          event_type: string;
+          title: string;
+          attributes: Json;
+          fetched_at: string;
+          geojson: Json;
+        }>;
+      };
       latest_source_freshness: {
         Args: Record<string, never>;
         Returns: Array<{ source: string; last_success_at: string | null; last_status: string | null }>;
@@ -492,7 +540,7 @@ export type Database = {
       condition_type: 'distance_threshold_miles' | 'magnitude_threshold' | 'aqi_threshold' | 'any_active';
       notification_channel: 'web_push' | 'email' | 'both';
       delivery_channel: 'web_push' | 'email';
-      hazard_source: 'nws' | 'firms' | 'inciweb' | 'usgs' | 'airnow';
+      hazard_source: 'nws' | 'firms' | 'inciweb' | 'usgs' | 'airnow' | 'epa' | 'nhc';
     };
     CompositeTypes: Record<string, never>;
   };

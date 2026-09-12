@@ -30,6 +30,7 @@ function toResult(item: NominatimResult): GeocodeResult {
     longitude: Number(item.lon),
     city_name: city,
     state,
+    postal_code: a.postcode ? a.postcode.trim().slice(0, 12) : null,
     country: (a.country_code ?? 'us').toUpperCase(),
   };
 }

@@ -37,11 +37,17 @@ async function eventsForRule(sb: TypedSupabaseClient, rule: RuleWithLocation): P
   const layer = (t: LocationLayer['layer_type']) => loc.location_layers.find((l) => l.layer_type === t);
   switch (rule.condition_type) {
     case 'distance_threshold_miles': {
-      const { data, error } = await sb.rpc('hazards_near', {
-        p_lat: lat, p_lng: lng, p_radius_miles: Number(rule.threshold_value ?? 25), p_event_types: ['fire_hotspot', 'fire_incident'], p_limit: 500,
-      });
-      if (error) throw new Error(error.message);
-      return { events: (data ?? []).map(toEvent), radius: Number(rule.threshold_value ?? 25) };
+      const radius = Number(rule.threshold_value ?? 25);
+      const [points, polygons] = await Promise.all([
+        sb.rpc('hazards_near', { p_lat: lat, p_lng: lng, p_radius_miles: radius, p_event_types: ['fire_hotspot', 'fire_incident'], p_limit: 500 }),
+        sb.rpc('perimeters_near', { p_lat: lat, p_lng: lng, p_radius_miles: radius, p_event_types: ['fire_perimeter'], p_limit: 50 }),
+      ]);
+      if (points.error) throw new Error(points.error.message);
+      if (polygons.error) throw new Error(polygons.error.message);
+      const perimeterEvents = (polygons.data ?? []).map((r) =>
+        toEvent({ ...r, description: null, latitude: null, longitude: null, magnitude: null, aqi: null }),
+      );
+      return { events: [...(points.data ?? []).map(toEvent), ...perimeterEvents], radius };
     }
     case 'magnitude_threshold': {
       const radius = Number(layer('earthquake')?.radius_miles ?? 100);

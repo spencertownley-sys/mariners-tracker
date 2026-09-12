@@ -18,6 +18,7 @@ export function toLocationDTO(row: WatchLocation): LocationDTO {
     longitude: Number(row.longitude),
     city_name: row.city_name,
     state: row.state,
+    postal_code: row.postal_code,
     country: row.country,
     is_primary: row.is_primary,
     created_at: row.created_at,
@@ -69,6 +70,7 @@ export async function createLocation(
       longitude: input.longitude,
       city_name: input.city_name ?? null,
       state: input.state ?? null,
+      postal_code: input.postal_code ?? null,
       country: input.country ?? 'US',
       is_primary: input.is_primary ?? false,
     })
@@ -93,6 +95,7 @@ export async function updateLocation(
   if (input.longitude !== undefined) patch.longitude = input.longitude;
   if (input.city_name !== undefined) patch.city_name = input.city_name;
   if (input.state !== undefined) patch.state = input.state;
+  if (input.postal_code !== undefined) patch.postal_code = input.postal_code;
   if (input.country !== undefined) patch.country = input.country;
   if (input.is_primary !== undefined) patch.is_primary = input.is_primary;
 

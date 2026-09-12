@@ -13,11 +13,11 @@ Non-goals for MVP: scanner audio, AI risk summaries, native apps, non-US weather
 - `apps/web` — Next.js 16 App Router on Vercel. Marketing pages, authenticated app, and the REST API under `/api`. Supabase Auth via `@supabase/ssr` (cookies). Tailwind v4 with the design tokens in `src/app/globals.css`. Leaflet + OpenStreetMap tiles (no key).
 - `apps/worker` — Node (tsx) on Railway. Pollers in `src/pollers/*` write normalized rows to `cached_hazard_events` / `cached_weather`; `src/notify/*` evaluates rules and sends push/email; `/health` for uptime checks.
 - `packages/shared` — types, Zod schemas, geo math, AQI categories, rule matching, the Supabase `Database` type. Consumed as TypeScript source.
-- `supabase/migrations` — the schema. PostGIS is in the `extensions` schema. All read-side proximity logic lives in SQL functions (`hazards_near`, `alerts_for_point`, `hazards_in_bbox`, `nearest_weather`, `dashboard_summary`).
+- `supabase/migrations` — the schema. PostGIS is in the `extensions` schema. All read-side proximity logic lives in SQL functions (`hazards_near`, `alerts_for_point`, `hazards_in_bbox`, `nearest_weather`, `dashboard_summary`, `perimeters_near`, `hazard_polygons_in_bbox`).
 
 ## Rules that must hold
 
-1. **Never call an external hazard API from a user request.** Reads come from the caches only. Only the worker talks to NWS/FIRMS/USGS/AirNow/NIFC.
+1. **Never call an external hazard API from a user request.** Reads come from the caches only. Only the worker talks to NWS/FIRMS/USGS/AirNow/NIFC/NHC/EPA. Map tiles and overlays (OSM, USGS, NEXRAD, ERDDAP) are the one exception: the browser loads them directly because they are public, key-less image tiles.
 2. **Every API response uses the error envelope in API Design §8** — go through `withErrorHandling` and throw `ApiError`.
 3. **Validate every input server-side with the Zod schemas in `packages/shared`** (lat/lng bounds, threshold ranges, layer/condition combinations).
 4. **RLS is the authorization model.** User-owned tables are scoped by `auth.uid()`; the caches are public read-only; only the service role writes caches. Don't bypass RLS in web routes except through `getAdminClient()` for the two documented cases (account deletion, 403-vs-404 ownership check).
@@ -33,7 +33,7 @@ Non-goals for MVP: scanner audio, AI risk summaries, native apps, non-US weather
 1. Monorepo scaffold, shared package, migrations (verified against a real PostGIS instance).
 2. Web API routes exactly as API Design §3–7, plus `/api/geocode`, `/api/push/subscribe`, `/api/account`.
 3. Web UI: marketing → auth → onboarding wizard → dashboard → location detail (streaming sections) → public map → alerts history → settings.
-4. Worker: pollers (USGS, NWS alerts, NWS weather, FIRMS, NIFC with InciWeb RSS fallback, AirNow) → scheduler + heartbeat → rule evaluation → push + email.
+4. Worker: pollers (USGS, NWS alerts, NWS weather, FIRMS, NIFC with InciWeb RSS fallback, NIFC perimeters + 10-year history, NHC storms, AirNow, EPA UV) → scheduler + heartbeat → rule evaluation → push + email.
 5. Verify: `pnpm typecheck && pnpm lint && pnpm test && pnpm build`.
 
 ## Verifying changes

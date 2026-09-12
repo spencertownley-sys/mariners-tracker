@@ -10,6 +10,7 @@ const baseRule: NotificationRule = {
   threshold_value: 25,
   channel: 'both',
   enabled: true,
+  min_interval_minutes: null,
   created_at: '',
   updated_at: '',
 };
@@ -68,6 +69,9 @@ describe('eventMatchesRule', () => {
     expect(eventMatchesRule(weather, minor, ctx)).toBe(false);
     expect(eventMatchesRule(weather, severe, ctx)).toBe(true);
   });
+  it('matches an active perimeter within the distance threshold', () => {
+    expect(eventMatchesRule(baseRule, event({ event_type: 'fire_perimeter', source: 'inciweb' }), { distanceMiles: 3, radiusMiles: 25 })).toBe(true);
+  });
   it('never matches an event type from another layer', () => {
     expect(eventMatchesRule(baseRule, event({ event_type: 'earthquake', magnitude: 6 }), { distanceMiles: 1, radiusMiles: 25 })).toBe(false);
   });
@@ -90,6 +94,13 @@ describe('buildNotificationSummary', () => {
         "Mom's House",
       ),
     ).toBe("M4.5 earthquake 45 mi from Mom's House");
+    expect(
+      buildNotificationSummary(
+        baseRule,
+        event({ event_type: 'fire_perimeter', title: 'Bear Creek Fire', attributes: { acres: 1200, containment_pct: 40 }, distance_miles: 3.2 }),
+        'Home',
+      ),
+    ).toBe('Bear Creek Fire perimeter (1,200 acres, 40% contained) is 3.2 mi from Home');
     expect(
       buildNotificationSummary(
         { ...baseRule, layer_type: 'air_quality', condition_type: 'aqi_threshold' },

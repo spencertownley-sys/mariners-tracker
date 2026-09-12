@@ -33,7 +33,24 @@ export interface NwsObservation {
   temperature?: Quantity;
   relativeHumidity?: Quantity;
   windSpeed?: Quantity;
+  windDirection?: Quantity;
+  windGust?: Quantity;
   icon?: string | null;
+}
+
+const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+
+/** Degrees (direction the wind blows from) → 16-point compass label. */
+export function degreesToCompass(deg: number | null | undefined): string | null {
+  if (typeof deg !== 'number' || !Number.isFinite(deg)) return null;
+  return COMPASS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16] ?? null;
+}
+
+/** NWS wind speed strings look like "2 mph" or "2 to 6 mph"; take the upper bound. */
+export function parseWindMph(value: string | undefined): number | null {
+  if (!value) return null;
+  const nums = value.match(/\d+/g)?.map(Number) ?? [];
+  return nums.length ? Math.max(...nums) : null;
 }
 
 interface PointsResponse {
@@ -61,6 +78,8 @@ export function normalizeHourly(periods: NwsPeriod[]): WeatherHourly[] {
     conditions: p.shortForecast,
     precip_pct: p.probabilityOfPrecipitation?.value ?? null,
     icon: p.icon ?? null,
+    wind_mph: parseWindMph(p.windSpeed),
+    wind_dir: p.windDirection ?? null,
   }));
 }
 
@@ -109,6 +128,8 @@ export function normalizeCurrent(obs: NwsObservation | null, station: string | n
       conditions: obs.textDescription?.trim() || hourly[0]?.conditions || 'Conditions unavailable',
       humidity_pct: typeof obs.relativeHumidity?.value === 'number' ? Math.round(obs.relativeHumidity.value) : null,
       wind_mph: typeof obs.windSpeed?.value === 'number' ? kmhToMph(obs.windSpeed.value) : null,
+      wind_dir: degreesToCompass(obs.windDirection?.value) ?? hourly[0]?.wind_dir ?? null,
+      wind_gust_mph: typeof obs.windGust?.value === 'number' ? kmhToMph(obs.windGust.value) : null,
       icon: obs.icon ?? null,
       observed_at: obs.timestamp ?? null,
       station,
@@ -121,7 +142,9 @@ export function normalizeCurrent(obs: NwsObservation | null, station: string | n
     temp_f: first.temp_f,
     conditions: first.conditions,
     humidity_pct: null,
-    wind_mph: null,
+    wind_mph: first.wind_mph,
+    wind_dir: first.wind_dir,
+    wind_gust_mph: null,
     icon: first.icon,
     observed_at: first.time,
     station: null,

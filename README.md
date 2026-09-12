@@ -1,6 +1,6 @@
 # AllClear
 
-One calm dashboard for the places you care about: weather, wildfire & smoke, earthquakes, air quality and official alerts — every fact sourced from a named public feed (NWS, NASA FIRMS, USGS, AirNow, NIFC/InciWeb).
+One calm dashboard for the places you care about: weather, wildfire & smoke, earthquakes, air quality and official alerts — every fact sourced from a named public feed (NWS, NASA FIRMS, USGS, AirNow, NIFC/InciWeb, NOAA NHC, EPA).
 
 The product docs that drive this build live in [`docs/`](docs/): [PRD](docs/AllClear-PRD.md) · [Tech Spec](docs/AllClear-TECH_SPEC.md) · [API Design](docs/AllClear-API_DESIGN.md) · [UI/UX Notes](docs/AllClear-UI_UX_NOTES.md) · [Launch Checklist](docs/AllClear-LAUNCH_CHECKLIST.md). The build prompt is [`CLAUDE.md`](CLAUDE.md).
 
@@ -8,7 +8,7 @@ The product docs that drive this build live in [`docs/`](docs/): [PRD](docs/AllC
 
 ```
 apps/web        Next.js 16 (App Router) — marketing site, authenticated dashboard, REST API routes  → Vercel
-apps/worker     Node worker — polls NWS / FIRMS / USGS / AirNow / NIFC, evaluates rules, sends push + email → Railway
+apps/worker     Node worker — polls NWS / FIRMS / USGS / AirNow / NIFC / NHC / EPA, evaluates rules, sends push + email → Railway
 packages/shared Types, Zod schemas, geo math, AQI categories, rule evaluation, Supabase Database type
 supabase/       migrations (PostGIS schema, RLS, RPCs), dev seed, CLI config
 ```
@@ -47,6 +47,28 @@ A poller whose key is missing is skipped with a warning; the rest of the product
 | `pnpm test` | Vitest unit tests (shared: geo/rules/schemas; web: rate limiter; worker: normalizers + notification selection) |
 | `pnpm build` | `next build` for the web app; type-checks the worker |
 | `pnpm --filter @allclear/worker poll usgs` | Run one poller once (`usgs`, `firms`, `nws_alerts`, `nws_weather`, `airnow`, `nifc`) |
+
+## Free data sources
+
+Everything AllClear shows comes from a public feed that needs no paid plan. Only NASA FIRMS and AirNow need a (free) API key; the rest are open.
+
+| What | Feed | Cadence |
+| --- | --- | --- |
+| Official alerts, forecasts, observations | NWS `api.weather.gov` | 5–15 min |
+| Satellite fire hotspots | NASA FIRMS (key) | 15 min |
+| Named incidents | NIFC WFIGS incident locations (InciWeb RSS fallback) | 15 min |
+| Active fire perimeters | NIFC WFIGS interagency perimeters | 20 min |
+| 10-year fire history near each Watch Location | NIFC interagency perimeter history | daily |
+| Earthquakes | USGS GeoJSON feed | 5 min |
+| Air quality | AirNow (key) | 30 min |
+| UV index | EPA Envirofacts UV daily forecast (by ZIP) | 6 h |
+| Tropical cyclones | NOAA NHC `CurrentStorms.json` | 30 min |
+| Basemaps | OpenStreetMap, USGS National Map imagery + topo tiles | — |
+| Radar overlay | Iowa Environmental Mesonet NEXRAD composite tiles | live |
+| Sea-surface temperature overlay | NOAA CoastWatch ERDDAP (JPL MUR) WMS | daily |
+| Live wildfire cameras | Link out to ALERTWildfire (no API) | — |
+
+Not included because no free feed exists: utility power-outage maps, embedded camera video, and Windy-style wind animation.
 
 ## Architecture in one paragraph
 

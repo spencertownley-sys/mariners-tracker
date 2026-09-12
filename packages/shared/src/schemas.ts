@@ -31,6 +31,7 @@ export const createLocationSchema = z.object({
   longitude: longitudeSchema,
   city_name: optionalText(120),
   state: optionalText(60),
+  postal_code: z.string().trim().min(3).max(12).nullable().optional(),
   country: z.string().trim().length(2, 'Use a 2-letter country code').toUpperCase().optional(),
   is_primary: z.boolean().optional(),
 });
@@ -119,6 +120,15 @@ function thresholdIssues(
   return [];
 }
 
+/** Minimum minutes between notifications; null = every new event. */
+const minIntervalSchema = z
+  .number()
+  .int()
+  .min(15, 'At least 15 minutes')
+  .max(10080, 'At most 7 days')
+  .nullable()
+  .optional();
+
 export const createRuleSchema = z
   .object({
     layer_type: z.enum(NOTIFICATION_LAYER_TYPES),
@@ -126,6 +136,7 @@ export const createRuleSchema = z
     threshold_value: z.number().nullable().optional(),
     channel: z.enum(CHANNELS).default('both'),
     enabled: z.boolean().default(true),
+    min_interval_minutes: minIntervalSchema,
   })
   .superRefine((rule, ctx) => {
     for (const issue of thresholdIssues(rule.layer_type, rule.condition_type, rule.threshold_value)) {
@@ -139,6 +150,7 @@ export const updateRuleSchema = z
     threshold_value: z.number().nullable().optional(),
     channel: z.enum(CHANNELS).optional(),
     enabled: z.boolean().optional(),
+    min_interval_minutes: minIntervalSchema,
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'Nothing to update' });
 export type UpdateRuleInput = z.infer<typeof updateRuleSchema>;
@@ -168,13 +180,15 @@ export const mapQuerySchema = z.object({
     .string()
     .optional()
     .transform((value) => {
-      const requested = (value ?? 'fires,quakes')
+      const requested = (value ?? 'fires,quakes,perimeters,storms')
         .split(',')
         .map((s) => s.trim().toLowerCase())
         .filter(Boolean);
       return {
         fires: requested.includes('fires'),
         quakes: requested.includes('quakes'),
+        perimeters: requested.includes('perimeters'),
+        storms: requested.includes('storms'),
       };
     }),
 });

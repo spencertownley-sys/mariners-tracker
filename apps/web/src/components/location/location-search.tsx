@@ -75,6 +75,7 @@ export function LocationSearch({ onSelect, selected }: LocationSearchProps) {
           longitude: latlng.longitude,
           city_name: null,
           state: null,
+          postal_code: null,
           country: 'US',
         },
       );
