@@ -54,8 +54,9 @@ The browser never calls a government API. The worker polls each source on its ow
 
 ## Deploying
 
-- **Web → Vercel** (Tech Spec default): root directory `apps/web`, framework Next.js, install command `pnpm install --frozen-lockfile` from the repo root (enable "Include files outside root directory"). Set the env vars above. The web app also runs on Railway via `apps/web/Dockerfile` (config: `apps/web/railway.json`), which is how the first draft is hosted.
-- **Worker → Railway.** `apps/worker/Dockerfile` with config `apps/worker/railway.json`. Liveness `/healthz`, readiness `/health` (503 until every enabled poller has succeeded recently, or until `SUPABASE_SERVICE_ROLE_KEY` is set). Set the same Supabase vars plus the API keys.
+- **Web → Vercel** (Tech Spec default): root directory `apps/web`, framework Next.js, install command `pnpm install --frozen-lockfile` from the repo root (enable "Include files outside root directory"). Set the env vars above. The web app also runs on Railway via `apps/web/Dockerfile`, which is how the first draft is hosted (service settings: Dockerfile path `apps/web/Dockerfile`, healthcheck `/privacy`, domain target port 3000).
+- **Worker → Railway.** `apps/worker/Dockerfile` (service settings: Dockerfile path `apps/worker/Dockerfile`, healthcheck `/healthz`, port 8080). Liveness `/healthz`, readiness `/health` (503 until every enabled poller has succeeded recently, or until `SUPABASE_SERVICE_ROLE_KEY` is set). Set the same Supabase vars plus the API keys.
+- Railway's config-as-code (`railway.json`) is deprecated on their platform, so service settings are configured on the services themselves.
 - **Database → Supabase.** CI applies `supabase/migrations` with the Supabase CLI before deploying. Migrations are additive so a code rollback never needs a DB rollback (Tech Spec §9).
 
 See [`docs/AllClear-LAUNCH_CHECKLIST.md`](docs/AllClear-LAUNCH_CHECKLIST.md) before announcing anything.
